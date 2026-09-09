@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DO IT.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#ffffff;
+    --text:#171717;
+    --muted:#9a9a97;
+    --line:#e9e9e6;
+    --accent:#2f5d3a;
+    --accent-soft:#eaf1ec;
+    --danger:#a85c4f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:1500px;margin:0;padding:64px 48px 140px 48px;}
+
+  .app-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+  .title-block{display:flex;flex-direction:column;gap:4px;}
+  .title{font-size:2.25rem;font-weight:700;letter-spacing:0.02em;margin:0;}
+  .datetime-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+  .datetime{font-size:0.78rem;color:var(--muted);font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:8px;}
+  .counters{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+  .counter{font-size:0.85rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .sep{color:var(--line);}
+  .sync-status{font-size:0.72rem;color:var(--muted);}
+
+  .divider{height:3px;background:#000000;margin:22px 0 30px;}
+
+  .columns{display:flex;align-items:flex-start;gap:40px;}
+  .column{flex:1;min-width:0;}
+  .column-divider{width:1px;align-self:stretch;background:var(--line);flex-shrink:0;}
+  .area-subtitle{
+    color:var(--muted);font-size:0.72rem;font-weight:600;
+    text-transform:uppercase;letter-spacing:0.08em;margin:0 0 16px;
+  }
+
+  .tabs{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;min-height:32px;}
+
+  .tab{
+    position:relative;display:flex;align-items:center;gap:8px;
+    max-width:300px;overflow:hidden;white-space:nowrap;
+  }
+
+  .tab-name{
+    background:none;border:1px solid var(--line);border-radius:6px;
+    font:inherit;font-size:0.95rem;font-weight:500;
+    color:var(--muted);cursor:pointer;padding:8px 14px;
+    transition:color .2s ease, border-color .2s ease;
+  }
+  .tab-name:hover{color:var(--text);border-color:#d6d6d2;}
+  .tab.active .tab-name{color:var(--text);border-color:var(--accent);}
+  .tab-rename{
+    font:inherit;font-size:0.95rem;font-weight:500;border:1px solid var(--accent);border-radius:6px;
+    outline:none;background:transparent;color:var(--text);padding:8px 14px;width:140px;
+  }
+  .archive-row{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line);}
+  .archive-actions{display:flex;align-items:center;gap:18px;margin-left:auto;flex-shrink:0;}
+  .archive-action{
+    background:none;border:none;font:inherit;font-size:0.82rem;color:var(--accent);
+    cursor:pointer;padding:2px 0;opacity:0.85;
+  }
+  .archive-action:hover{opacity:1;text-decoration:underline;}
+  .archive-remove{
+    background:none;border:none;font:inherit;font-size:0.82rem;color:var(--danger);
+    cursor:pointer;padding:2px 0;opacity:0.85;
+  }
+  .archive-remove:hover{opacity:1;text-decoration:underline;}
+  .archive-confirm-text{font-size:0.82rem;color:var(--danger);}
+
+  .panel-archive-btn{
+    background:none;border:none;font:inherit;font-size:0.82rem;color:var(--muted);
+    cursor:pointer;padding:2px 0;transition:color .2s ease;
+  }
+  .panel-archive-btn:hover{color:var(--danger);text-decoration:underline;}
+
+  .add-tab{
+    background:none;border:1px dashed var(--line);color:var(--muted);
+    width:26px;height:26px;min-width:26px;border-radius:50%;font-size:1rem;line-height:1;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:border-color .2s ease, color .2s ease;
+  }
+  .add-tab:hover{border-color:var(--accent);color:var(--accent);}
+
+  .hint{color:var(--muted);font-size:0.92rem;margin-top:26px;}
+
+  .panel{
+    margin-top:0;opacity:0;transform:translateY(-8px);max-height:0;overflow:hidden;
+    padding-left:6px;padding-right:6px;margin-left:-6px;margin-right:-6px;
+    transition:opacity .3s ease, transform .3s ease, max-height .4s ease, margin-top .3s ease;
+  }
+  .panel.open{opacity:1;transform:translateY(0);max-height:3600px;margin-top:30px;}
+
+  .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px;}
+  .panel-head-right{display:flex;align-items:center;gap:16px;flex-shrink:0;}
+  .panel-title{font-size:1.05rem;font-weight:600;margin:0;}
+  .panel-count{font-size:0.8rem;color:var(--muted);font-variant-numeric:tabular-nums;}
+
+  .task-input-row{display:flex;gap:10px;margin-bottom:22px;}
+  .task-input{
+    flex:1;border:none;border-bottom:1px solid var(--line);padding:8px 2px;
+    font:inherit;font-size:1rem;background:transparent;color:var(--text);outline:none;
+    transition:border-color .2s ease;min-width:0;
+  }
+  .task-input:focus{border-color:var(--accent);}
+  .add-btn{
+    border:none;background:var(--text);color:#fff;padding:0 18px;border-radius:6px;
+    font:inherit;font-size:0.9rem;cursor:pointer;transition:opacity .2s ease;flex-shrink:0;
+  }
+  .add-btn:hover{opacity:0.82;}
+
+  .task-list{
+    list-style:none;margin:0;padding:0 6px 0 0;display:flex;flex-direction:column;
+    max-height:1400px;overflow-y:auto;overflow-x:hidden;
+  }
+  .task-item{
+    display:flex;align-items:flex-start;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line);
+    animation:fadeIn .25s ease;
+  }
+  .task-checkbox{margin-top:3px;width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+  .task-body{flex:1;min-width:0;}
+  .task-text{font-size:0.98rem;line-height:1.4;word-break:break-word;}
+  .task-item.done .task-text{color:var(--muted);text-decoration:line-through;}
+  .task-meta{font-size:0.74rem;color:var(--muted);margin-top:3px;}
+  .task-remove{
+    border:none;background:none;color:var(--muted);cursor:pointer;font-size:0.85rem;
+    opacity:0;transition:opacity .15s ease;flex-shrink:0;padding:2px;
+  }
+  .task-item:hover .task-remove{opacity:0.6;}
+  .task-remove:hover{opacity:1 !important;color:var(--danger);}
+
+  .empty-state{color:var(--muted);font-size:0.92rem;padding:8px 0 4px;}
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;animation:none !important;}
+  }
+
+  @media (max-width:480px){
+    .app{padding:44px 18px 100px;}
+    .title{font-size:1.9rem;}
+    .columns{flex-direction:column;gap:30px;}
+    .column-divider{display:none;}
+  }
+
+  /* Agenda */
+  .agenda-selectors{display:flex;gap:10px;max-width:280px;margin-bottom:16px;}
+  .agenda-select{
+    flex:1;border:1px solid var(--line);border-radius:6px;padding:10px 14px;
+    font:inherit;font-size:0.95rem;font-weight:500;color:var(--text);
+    background:none;cursor:pointer;width:100%;outline:none;
+    transition:border-color .2s ease;
+  }
+  .agenda-select:hover{border-color:#d6d6d2;}
+  .agenda-select:focus{border-color:var(--accent);}
+
+  .agenda-days{
+    list-style:none;margin:0;padding:2px 6px;display:flex;flex-direction:column;
+    margin-left:-6px;margin-right:-6px;
+    max-height:1650px;overflow-y:auto;overflow-x:hidden;
+  }
+
+  .agenda-day{border-bottom:1px solid var(--line);padding:10px 2px;}
+  .agenda-day-row{display:flex;align-items:center;gap:10px;}
+  .agenda-day-row + .agenda-day-row{margin-top:8px;}
+  .agenda-date{
+    font-size:0.85rem;color:var(--text);white-space:nowrap;flex-shrink:0;
+    font-variant-numeric:tabular-nums;min-width:96px;
+  }
+  .agenda-date.is-continuation{color:transparent;user-select:none;}
+  .agenda-input{
+    flex:1;border:none;border-bottom:1px solid var(--line);padding:6px 2px;
+    font:inherit;font-size:0.95rem;background:transparent;color:var(--text);outline:none;
+    transition:border-color .2s ease;min-width:0;
+  }
+  .agenda-input:focus{border-color:var(--accent);}
+  .agenda-add-entry{
+    background:none;border:1px dashed var(--line);color:var(--muted);
+    width:22px;height:22px;min-width:22px;border-radius:50%;font-size:0.9rem;line-height:1;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    transition:border-color .2s ease, color .2s ease;
+  }
+  .agenda-add-entry:hover{border-color:var(--accent);color:var(--accent);}
+  .agenda-remove-entry{
+    background:none;border:none;color:var(--muted);cursor:pointer;
+    font-size:1rem;line-height:1;padding:2px 4px;flex-shrink:0;
+    transition:color .15s ease;
+  }
+  .agenda-remove-entry:hover{color:var(--danger);}
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="app-header">
+      <div class="title-block">
+        <h1 class="title">DO IT.</h1>
+        <div class="datetime-row">
+          <div class="datetime" id="datetime"></div>
+          <span class="sep">|</span>
+          <div class="counters">
+            <div class="counter" id="counter-total">0 tarefas no total</div>
+            <span class="sep">|</span>
+            <div class="counter" id="counter">0 tarefas concluídas</div>
+          </div>
+          <span class="sep">|</span>
+          <div class="sync-status" id="sync-status"></div>
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="columns">
+      <div class="column" id="projects-column">
+        <p class="area-subtitle">Tarefas</p>
+        <div class="tabs" id="tabs"></div>
+        <p class="hint" id="hint">Clique em um projeto acima para ver as tarefas.</p>
+        <div class="panel" id="panel"></div>
+      </div>
+      <div class="column-divider"></div>
+      <div class="column" id="agenda-column">
+        <p class="area-subtitle">Agenda</p>
+        <div class="agenda-selectors">
+          <select class="agenda-select" id="agenda-year">
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+            <option value="2029">2029</option>
+            <option value="2030">2030</option>
+          </select>
+          <select class="agenda-select" id="agenda-month"></select>
+        </div>
+        <ul class="agenda-days" id="agenda-days"></ul>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // ======================================================================
+  // CONFIGURAÇÃO DO BACKEND (Google Apps Script)
+  // Cole aqui a URL do seu Web App depois de publicá-lo (termina em /exec).
+  // Veja o passo a passo enviado junto com este arquivo.
+  // ======================================================================
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbw7IYjvLVs4oTZUmhrXgGDeD1NHNvWF_jUw1eBGpNDFPtpDF4-PK9eNkivsSc9O3_ULkQ/exec';
+
+  var storage = {
+    get: async function(key){
+      if(!GAS_URL || GAS_URL.indexOf('COLE_AQUI') !== -1){
+        console.warn('GAS_URL não configurada. Veja as instruções de configuração.');
+        return null;
+      }
+      var res = await fetch(GAS_URL + '?action=get&key=' + encodeURIComponent(key));
+      if(!res.ok) throw new Error('Falha na requisição GET (' + res.status + ')');
+      var data = await res.json();
+      if(!data || data.value === null || data.value === undefined || data.value === '') return null;
+      return { key: key, value: data.value };
+    },
+    set: async function(key, value){
+      if(!GAS_URL || GAS_URL.indexOf('COLE_AQUI') !== -1){
+        console.warn('GAS_URL não configurada. Veja as instruções de configuração.');
+        return null;
+      }
+      // Envia como texto simples (evita preflight CORS, que o Apps Script não trata)
+      var res = await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'set', key: key, value: value })
+      });
+      if(!res.ok) throw new Error('Falha na requisição POST (' + res.status + ')');
+      return await res.json();
+    }
+  };
+
+  var STORAGE_KEY = 'doit-data';
+  var state = null;
+  var editingId = null; // project currently in rename mode
+  var isSwitching = false;
+  var confirmDeleteId = null; // project pending permanent-delete confirmation
+
+  var tabsEl = document.getElementById('tabs');
+  var panelEl = document.getElementById('panel');
+  var hintEl = document.getElementById('hint');
+  var counterEl = document.getElementById('counter');
+  var counterTotalEl = document.getElementById('counter-total');
+  var datetimeEl = document.getElementById('datetime');
+  var syncStatusEl = document.getElementById('sync-status');
+
+  function setSyncStatus(text, isError){
+    if(!syncStatusEl) return;
+    syncStatusEl.textContent = text;
+    syncStatusEl.style.color = isError ? 'var(--danger)' : 'var(--muted)';
+  }
+
+  function uid(){
+    if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  }
+
+  function defaultState(){
+    return {
+      projects: [ { id: uid(), name: 'Meu projeto', tasks: [], archived: false } ],
+      activeId: null,
+      agenda: {}
+    };
+  }
+
+  function normalizeState(){
+    state.projects.forEach(function(p){ p.archived = !!p.archived; });
+    if(!state.agenda) state.agenda = {};
+  }
+
+  function getActiveProjects(){
+    return state.projects.filter(function(p){ return !p.archived; });
+  }
+
+  function getArchivedProjects(){
+    return state.projects.filter(function(p){ return p.archived; });
+  }
+
+  function formatDate(iso){
+    try{
+      var d = new Date(iso);
+      return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    }catch(e){ return ''; }
+  }
+
+  async function loadState(){
+    setSyncStatus('Carregando...');
+    try{
+      var res = await storage.get(STORAGE_KEY);
+      if(res && res.value){
+        state = JSON.parse(res.value);
+      } else {
+        state = defaultState();
+      }
+      setSyncStatus('Dados sincronizados');
+    }catch(e){
+      console.error('Falha ao carregar dados', e);
+      state = defaultState();
+      setSyncStatus('Não foi possível conectar ao backend', true);
+    }
+    normalizeState();
+    renderTabs();
+    renderCounter();
+    renderPanelInstant();
+    renderAgendaDays();
+  }
+
+  async function saveState(){
+    try{
+      await storage.set(STORAGE_KEY, JSON.stringify(state));
+      setSyncStatus('Dados sincronizados');
+    }catch(e){
+      console.error('Falha ao salvar dados', e);
+      setSyncStatus('Falha ao salvar — verifique sua conexão', true);
+    }
+  }
+
+  function getActiveProject(){
+    return state.projects.find(function(p){ return p.id === state.activeId && !p.archived; }) || null;
+  }
+
+  function renderCounter(){
+    var n = 0;
+    var total = 0;
+    state.projects.forEach(function(p){
+      p.tasks.forEach(function(t){ total++; if(t.done) n++; });
+    });
+    counterTotalEl.textContent = total + ' ' + (total === 1 ? 'tarefa no total' : 'tarefas no total');
+    counterEl.textContent = n + ' ' + (n === 1 ? 'tarefa concluída' : 'tarefas concluídas');
+  }
+
+  function updateDatetime(){
+    if(!datetimeEl) return;
+    var d = new Date();
+    var timeStr = d.toLocaleString('pt-BR', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    var dateStr = d.toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+    datetimeEl.innerHTML = '';
+    datetimeEl.appendChild(document.createTextNode(timeStr));
+    var sep = document.createElement('span');
+    sep.className = 'sep';
+    sep.textContent = '|';
+    datetimeEl.appendChild(sep);
+    datetimeEl.appendChild(document.createTextNode(dateStr));
+  }
+
+  function el(tag, props, children){
+    var e = document.createElement(tag);
+    if(props){
+      Object.keys(props).forEach(function(k){
+        if(k === 'class') e.className = props[k];
+        else if(k === 'text') e.textContent = props[k];
+        else if(k.indexOf('on') === 0) e.addEventListener(k.slice(2), props[k]);
+        else e.setAttribute(k, props[k]);
+      });
+    }
+    (children || []).forEach(function(c){ if(c) e.appendChild(c); });
+    return e;
+  }
+
+  function renderTabs(){
+    tabsEl.innerHTML = '';
+    var hasActive = !!state.activeId;
+    var activeProjects = getActiveProjects();
+    var archivedProjects = getArchivedProjects();
+
+    activeProjects.forEach(function(p){
+      var isActive = p.id === state.activeId;
+      var wrap = el('div', { class: 'tab' + (isActive ? ' active' : '') });
+
+      if(editingId === p.id){
+        var input = el('input', { class: 'tab-rename', value: p.name });
+        input.value = p.name;
+        input.addEventListener('keydown', function(e){
+          if(e.key === 'Enter'){ commitRename(p, input.value); }
+          if(e.key === 'Escape'){ editingId = null; renderTabs(); }
+        });
+        input.addEventListener('blur', function(){ commitRename(p, input.value); });
+        wrap.appendChild(input);
+        setTimeout(function(){ input.focus(); input.select(); }, 0);
+      } else {
+        var nameBtn = el('button', {
+          class: 'tab-name',
+          text: p.name,
+          onclick: function(){ selectTab(p.id); },
+          ondblclick: function(){ editingId = p.id; renderTabs(); }
+        });
+        wrap.appendChild(nameBtn);
+      }
+
+      tabsEl.appendChild(wrap);
+    });
+
+    var addBtn = el('button', {
+      class: 'add-tab',
+      text: '+',
+      'aria-label': 'Novo projeto',
+      onclick: addProject
+    });
+    tabsEl.appendChild(addBtn);
+
+    if(archivedProjects.length > 0){
+      var isArchiveActive = state.activeId === 'archive';
+      var archiveWrap = el('div', { class: 'tab' + (isArchiveActive ? ' active' : '') });
+      var archiveBtn = el('button', {
+        class: 'tab-name',
+        text: 'Arquivados (' + archivedProjects.length + ')',
+        onclick: function(){ selectTab('archive'); }
+      });
+      archiveWrap.appendChild(archiveBtn);
+      tabsEl.appendChild(archiveWrap);
+    }
+
+    if(!hasActive){
+      hintEl.style.display = 'block';
+      hintEl.textContent = activeProjects.length > 0
+        ? 'Clique em um projeto acima para ver as tarefas.'
+        : 'Nenhum projeto ativo. Crie um novo ou restaure um arquivado.';
+    } else {
+      hintEl.style.display = 'none';
+    }
+  }
+
+  function commitRename(project, value){
+    var trimmed = (value || '').trim();
+    if(trimmed) project.name = trimmed;
+    editingId = null;
+    renderTabs();
+    saveState();
+  }
+
+  function addProject(){
+    var p = { id: uid(), name: 'Novo projeto', tasks: [], archived: false };
+    state.projects.push(p);
+    state.activeId = p.id;
+    editingId = p.id;
+    renderTabs();
+    renderPanelInstant();
+    saveState();
+  }
+
+  function archiveProject(id){
+    var p = state.projects.find(function(x){ return x.id === id; });
+    if(!p) return;
+    p.archived = true;
+    if(state.activeId === id){
+      switchPanel(null);
+    } else {
+      renderTabs();
+      saveState();
+    }
+  }
+
+  function restoreProject(id){
+    var p = state.projects.find(function(x){ return x.id === id; });
+    if(!p) return;
+    p.archived = false;
+    renderTabs();
+    if(state.activeId === 'archive') buildPanelContent();
+    saveState();
+  }
+
+  function requestDeleteProject(id){
+    confirmDeleteId = id;
+    buildPanelContent();
+  }
+
+  function cancelDeleteProject(){
+    confirmDeleteId = null;
+    buildPanelContent();
+  }
+
+  function confirmDeleteProject(id){
+    state.projects = state.projects.filter(function(p){ return p.id !== id; });
+    confirmDeleteId = null;
+    renderTabs();
+    if(state.activeId === 'archive') buildPanelContent();
+    renderCounter();
+    saveState();
+  }
+
+  function selectTab(id){
+    if(isSwitching) return;
+    var next = state.activeId === id ? null : id;
+    switchPanel(next);
+  }
+
+  function switchPanel(nextId){
+    if(nextId !== 'archive') confirmDeleteId = null;
+    var wasOpen = panelEl.classList.contains('open');
+    isSwitching = true;
+    if(wasOpen){
+      panelEl.classList.remove('open');
+      setTimeout(function(){
+        state.activeId = nextId;
+        renderTabs();
+        buildPanelContent();
+        if(nextId){ requestAnimationFrame(function(){ panelEl.classList.add('open'); }); }
+        isSwitching = false;
+        saveState();
+      }, 260);
+    } else {
+      state.activeId = nextId;
+      renderTabs();
+      buildPanelContent();
+      requestAnimationFrame(function(){
+        if(nextId) panelEl.classList.add('open');
+        isSwitching = false;
+      });
+      saveState();
+    }
+  }
+
+  function renderPanelInstant(){
+    buildPanelContent();
+    if(state.activeId) panelEl.classList.add('open');
+    else panelEl.classList.remove('open');
+  }
+
+  function buildPanelContent(){
+    panelEl.innerHTML = '';
+    if(state.activeId === 'archive'){
+      buildArchiveContent();
+      return;
+    }
+    var project = getActiveProject();
+    if(!project) return;
+
+    var doneCount = project.tasks.filter(function(t){ return t.done; }).length;
+    var total = project.tasks.length;
+
+    var countSpan = el('span', { class: 'panel-count', text: total ? (doneCount + '/' + total) : '' });
+    var archiveBtn = el('button', {
+      class: 'panel-archive-btn',
+      text: 'Arquivar projeto',
+      onclick: function(){ archiveProject(project.id); }
+    });
+    var headRight = el('div', { class: 'panel-head-right' }, [countSpan, archiveBtn]);
+
+    var head = el('div', { class: 'panel-head' }, [
+      el('h2', { class: 'panel-title', text: project.name }),
+      headRight
+    ]);
+    panelEl.appendChild(head);
+
+    var input = el('input', { class: 'task-input', type:'text', placeholder: 'Nova tarefa...' });
+    var addTaskBtn = el('button', { class: 'add-btn', text: 'Adicionar' });
+    function submitTask(){
+      var text = input.value.trim();
+      if(!text) return;
+      project.tasks.unshift({ id: uid(), text: text, createdAt: new Date().toISOString(), done: false, doneAt: null });
+      input.value = '';
+      buildPanelContent();
+      panelEl.classList.add('open');
+      saveState();
+    }
+    addTaskBtn.addEventListener('click', submitTask);
+    input.addEventListener('keydown', function(e){ if(e.key === 'Enter') submitTask(); });
+
+    var inputRow = el('div', { class: 'task-input-row' }, [input, addTaskBtn]);
+    panelEl.appendChild(inputRow);
+
+    if(project.tasks.length === 0){
+      panelEl.appendChild(el('p', { class: 'empty-state', text: 'Nenhuma tarefa ainda. Adicione a primeira acima.' }));
+    } else {
+      var list = el('ul', { class: 'task-list' });
+      project.tasks.forEach(function(t){
+        var checkbox = el('input', { class: 'task-checkbox', type: 'checkbox' });
+        checkbox.checked = t.done;
+        checkbox.addEventListener('change', function(){
+          t.done = checkbox.checked;
+          t.doneAt = t.done ? new Date().toISOString() : null;
+          buildPanelContent();
+          renderCounter();
+          saveState();
+        });
+
+        var metaText = 'Criada em ' + formatDate(t.createdAt);
+        if(t.done && t.doneAt) metaText += ' · Concluída em ' + formatDate(t.doneAt);
+
+        var body = el('div', { class: 'task-body' }, [
+          el('div', { class: 'task-text', text: t.text }),
+          el('div', { class: 'task-meta', text: metaText })
+        ]);
+
+        var removeBtn = el('button', {
+          class: 'task-remove', text: '✕', 'aria-label': 'Remover tarefa',
+          onclick: function(){
+            project.tasks = project.tasks.filter(function(x){ return x.id !== t.id; });
+            buildPanelContent();
+            renderCounter();
+            saveState();
+          }
+        });
+
+        var item = el('li', { class: 'task-item' + (t.done ? ' done' : '') }, [checkbox, body, removeBtn]);
+        list.appendChild(item);
+      });
+      panelEl.appendChild(list);
+    }
+
+    renderCounter();
+  }
+
+  function buildArchiveContent(){
+    var head = el('div', { class: 'panel-head' }, [
+      el('h2', { class: 'panel-title', text: 'Projetos arquivados' })
+    ]);
+    panelEl.appendChild(head);
+
+    var archived = getArchivedProjects();
+    if(archived.length === 0){
+      panelEl.appendChild(el('p', { class: 'empty-state', text: 'Nenhum projeto arquivado.' }));
+      return;
+    }
+
+    var list = el('ul', { class: 'task-list' });
+    archived.forEach(function(p){
+      var doneCount = p.tasks.filter(function(t){ return t.done; }).length;
+      var meta = p.tasks.length + (p.tasks.length === 1 ? ' tarefa' : ' tarefas') + ' · ' + doneCount + ' concluídas';
+
+      var body = el('div', { class: 'task-body' }, [
+        el('div', { class: 'task-text', text: p.name }),
+        el('div', { class: 'task-meta', text: meta })
+      ]);
+
+      var actions;
+      if(confirmDeleteId === p.id){
+        var confirmText = el('span', { class: 'archive-confirm-text', text: 'Excluir para sempre?' });
+        var yesBtn = el('button', {
+          class: 'archive-remove', text: 'Sim, excluir',
+          onclick: function(){ confirmDeleteProject(p.id); }
+        });
+        var noBtn = el('button', {
+          class: 'archive-action', text: 'Cancelar',
+          onclick: function(){ cancelDeleteProject(); }
+        });
+        actions = el('div', { class: 'archive-actions' }, [confirmText, yesBtn, noBtn]);
+      } else {
+        var restoreBtn = el('button', {
+          class: 'archive-action', text: 'Restaurar',
+          onclick: function(){ restoreProject(p.id); }
+        });
+        var deleteBtn = el('button', {
+          class: 'archive-remove', text: 'Excluir', 'aria-label': 'Excluir permanentemente',
+          onclick: function(){ requestDeleteProject(p.id); }
+        });
+        actions = el('div', { class: 'archive-actions' }, [restoreBtn, deleteBtn]);
+      }
+
+      var row = el('li', { class: 'archive-row' }, [body, actions]);
+      list.appendChild(row);
+    });
+    panelEl.appendChild(list);
+  }
+
+  // ---------- Agenda ----------
+  var agendaYearSelect = document.getElementById('agenda-year');
+  var agendaMonthSelect = document.getElementById('agenda-month');
+  var agendaDaysEl = document.getElementById('agenda-days');
+  var WEEKDAYS_PT = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+  var MONTH_NAMES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+
+  function getDayEntries(dateKey){
+    if(!state.agenda[dateKey] || state.agenda[dateKey].length === 0){
+      state.agenda[dateKey] = [ { id: uid(), text: '' } ];
+    }
+    return state.agenda[dateKey];
+  }
+
+  function populateMonthOptions(){
+    var year = parseInt(agendaYearSelect.value, 10);
+    var startMonth = (year === 2026) ? 9 : 1;
+    var endMonth = (year === 2030) ? 12 : 12;
+    var prevValue = agendaMonthSelect.value ? parseInt(agendaMonthSelect.value, 10) : startMonth;
+    agendaMonthSelect.innerHTML = '';
+    for(var m = startMonth; m <= endMonth; m++){
+      var opt = el('option', { text: MONTH_NAMES_PT[m - 1] });
+      opt.value = m;
+      agendaMonthSelect.appendChild(opt);
+    }
+    agendaMonthSelect.value = (prevValue >= startMonth && prevValue <= endMonth) ? prevValue : startMonth;
+  }
+
+  function renderAgendaDays(){
+    agendaDaysEl.innerHTML = '';
+    var year = parseInt(agendaYearSelect.value, 10);
+    var month = parseInt(agendaMonthSelect.value, 10);
+    var daysInMonth = new Date(year, month, 0).getDate();
+
+    for(let d = 1; d <= daysInMonth; d++){
+      let dateObj = new Date(year, month - 1, d);
+      let dateKey = year + '-' + pad2(month) + '-' + pad2(d);
+      let label = pad2(d) + '/' + pad2(month) + ' - ' + WEEKDAYS_PT[dateObj.getDay()] + ':';
+
+      let dayLi = el('li', { class: 'agenda-day' });
+      let entries = getDayEntries(dateKey);
+
+      entries.forEach(function(entry, idx){
+        var dateSpan = el('span', {
+          class: 'agenda-date' + (idx > 0 ? ' is-continuation' : ''),
+          text: label
+        });
+
+        var input = el('input', { class: 'agenda-input', type: 'text', placeholder: 'Adicionar evento...' });
+        input.value = entry.text;
+        input.addEventListener('input', function(){ entry.text = input.value; });
+        input.addEventListener('blur', function(){ saveState(); });
+
+        var rowChildren = [dateSpan, input];
+
+        if(idx === 0){
+          var addBtn = el('button', {
+            class: 'agenda-add-entry',
+            type: 'button',
+            text: '+',
+            'aria-label': 'Adicionar outro evento neste dia',
+            onclick: function(){
+              getDayEntries(dateKey).push({ id: uid(), text: '' });
+              renderAgendaDays();
+              saveState();
+            }
+          });
+          rowChildren.push(addBtn);
+        }
+
+        var removeBtn = el('button', {
+          class: 'agenda-remove-entry',
+          type: 'button',
+          text: '×',
+          'aria-label': 'Excluir este evento',
+          onclick: function(){
+            var list = getDayEntries(dateKey);
+            var pos = list.indexOf(entry);
+            if(pos > -1) list.splice(pos, 1);
+            if(list.length === 0) delete state.agenda[dateKey];
+            renderAgendaDays();
+            saveState();
+          }
+        });
+        rowChildren.push(removeBtn);
+
+        var row = el('div', { class: 'agenda-day-row' }, rowChildren);
+        dayLi.appendChild(row);
+      });
+
+      agendaDaysEl.appendChild(dayLi);
+    }
+  }
+
+  agendaYearSelect.addEventListener('change', function(){
+    populateMonthOptions();
+    renderAgendaDays();
+  });
+  agendaMonthSelect.addEventListener('change', renderAgendaDays);
+
+  populateMonthOptions();
+
+  updateDatetime();
+  setInterval(updateDatetime, 1000);
+  loadState();
+})();
+</script>
+</body>
+</html>
