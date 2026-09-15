@@ -877,6 +877,24 @@
 
       agendaDaysEl.appendChild(dayLi);
     }
+
+    adjustAgendaScrollPadding();
+  }
+
+  // Garante que seja possível rolar para cima o suficiente para que os
+  // últimos dias do mês subam até a altura das 5 primeiras linhas da agenda.
+  function adjustAgendaScrollPadding(){
+    var days = agendaDaysEl.querySelectorAll('.agenda-day');
+    if(days.length === 0){
+      agendaDaysEl.style.paddingBottom = '';
+      return;
+    }
+    var sampleCount = Math.min(5, days.length);
+    var extra = 0;
+    for(var i = 0; i < sampleCount; i++){
+      extra += days[i].getBoundingClientRect().height;
+    }
+    agendaDaysEl.style.paddingBottom = extra + 'px';
   }
 
   agendaYearSelect.addEventListener('change', function(){
@@ -912,7 +930,10 @@
   var alignResizeTimer = null;
   window.addEventListener('resize', function(){
     clearTimeout(alignResizeTimer);
-    alignResizeTimer = setTimeout(alignAgendaTop, 150);
+    alignResizeTimer = setTimeout(function(){
+      alignAgendaTop();
+      adjustAgendaScrollPadding();
+    }, 150);
   });
 
   populateMonthOptions();
