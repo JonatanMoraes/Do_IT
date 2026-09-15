@@ -881,19 +881,20 @@
     adjustAgendaScrollPadding();
   }
 
-  // Garante que seja possível rolar para cima o suficiente para que os
-  // últimos dias do mês subam até a altura das 5 primeiras linhas da agenda.
+  // Garante que seja possível rolar para cima o suficiente para que o
+  // último dia do mês chegue até a primeira linha visível da agenda.
   function adjustAgendaScrollPadding(){
+    agendaDaysEl.style.paddingBottom = '0px';
     var days = agendaDaysEl.querySelectorAll('.agenda-day');
-    if(days.length === 0){
-      agendaDaysEl.style.paddingBottom = '';
-      return;
-    }
-    var sampleCount = Math.min(5, days.length);
-    var extra = 0;
-    for(var i = 0; i < sampleCount; i++){
-      extra += days[i].getBoundingClientRect().height;
-    }
+    if(days.length === 0) return;
+
+    var containerHeight = agendaDaysEl.clientHeight;
+    var contentHeight = agendaDaysEl.scrollHeight;
+    if(contentHeight <= containerHeight) return; // sem necessidade de rolagem
+
+    var lastHeight = days[days.length - 1].getBoundingClientRect().height;
+    var extra = containerHeight - lastHeight;
+    if(extra < 0) extra = 0;
     agendaDaysEl.style.paddingBottom = extra + 'px';
   }
 
