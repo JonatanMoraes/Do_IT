@@ -123,8 +123,13 @@
 
   .task-list{
     list-style:none;margin:0;padding:0 6px 0 0;display:flex;flex-direction:column;
-    max-height:1400px;overflow-y:auto;overflow-x:hidden;
+    max-height:640px;overflow-y:scroll;overflow-x:hidden;
+    scrollbar-width:thin;scrollbar-color:#c4c4c0 #ffffff;
   }
+  .task-list::-webkit-scrollbar{width:10px;}
+  .task-list::-webkit-scrollbar-track{background:#ffffff;}
+  .task-list::-webkit-scrollbar-thumb{background-color:#c4c4c0;border-radius:8px;border:2px solid #fff;}
+  .task-list::-webkit-scrollbar-thumb:hover{background-color:#a8a8a4;}
   .task-item{
     display:flex;align-items:flex-start;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line);
     animation:fadeIn .25s ease;
@@ -134,12 +139,17 @@
   .task-text{font-size:0.98rem;line-height:1.4;word-break:break-word;}
   .task-item.done .task-text{color:var(--muted);text-decoration:line-through;}
   .task-meta{font-size:0.74rem;color:var(--muted);margin-top:3px;}
-  .task-remove{
+  .task-remove, .task-edit{
     border:none;background:none;color:var(--muted);cursor:pointer;font-size:0.85rem;
     opacity:0;transition:opacity .15s ease;flex-shrink:0;padding:2px;
   }
-  .task-item:hover .task-remove{opacity:0.6;}
+  .task-item:hover .task-remove, .task-item:hover .task-edit{opacity:0.6;}
   .task-remove:hover{opacity:1 !important;color:var(--danger);}
+  .task-edit:hover{opacity:1 !important;color:var(--accent);}
+  .task-edit-input{
+    width:100%;border:none;border-bottom:1px solid var(--accent);padding:2px 0;
+    font:inherit;font-size:0.98rem;background:transparent;color:var(--text);outline:none;
+  }
 
   .empty-state{color:var(--muted);font-size:0.92rem;padding:8px 0 4px;}
 
@@ -160,6 +170,7 @@
 
   /* Agenda */
   .agenda-selectors{display:flex;gap:10px;max-width:280px;margin-bottom:16px;}
+  .agenda-align-spacer{height:0;}
   .agenda-select{
     flex:1;border:1px solid var(--line);border-radius:6px;padding:10px 14px;
     font:inherit;font-size:0.95rem;font-weight:500;color:var(--text);
@@ -172,8 +183,13 @@
   .agenda-days{
     list-style:none;margin:0;padding:2px 6px;display:flex;flex-direction:column;
     margin-left:-6px;margin-right:-6px;
-    max-height:1650px;overflow-y:auto;overflow-x:hidden;
+    max-height:640px;overflow-y:scroll;overflow-x:hidden;
+    scrollbar-width:thin;scrollbar-color:#c4c4c0 #ffffff;
   }
+  .agenda-days::-webkit-scrollbar{width:10px;}
+  .agenda-days::-webkit-scrollbar-track{background:#ffffff;}
+  .agenda-days::-webkit-scrollbar-thumb{background-color:#c4c4c0;border-radius:8px;border:2px solid #fff;}
+  .agenda-days::-webkit-scrollbar-thumb:hover{background-color:#a8a8a4;}
 
   .agenda-day{border-bottom:1px solid var(--line);padding:10px 2px;}
   .agenda-day-row{display:flex;align-items:center;gap:10px;}
@@ -184,11 +200,10 @@
   }
   .agenda-date.is-continuation{color:transparent;user-select:none;}
   .agenda-input{
-    flex:1;border:none;border-bottom:1px solid var(--line);padding:6px 2px;
+    flex:1;border:none;padding:6px 2px;
     font:inherit;font-size:0.95rem;background:transparent;color:var(--text);outline:none;
-    transition:border-color .2s ease;min-width:0;
+    min-width:0;
   }
-  .agenda-input:focus{border-color:var(--accent);}
   .agenda-add-entry{
     background:none;border:1px dashed var(--line);color:var(--muted);
     width:22px;height:22px;min-width:22px;border-radius:50%;font-size:0.9rem;line-height:1;
@@ -196,6 +211,13 @@
     transition:border-color .2s ease, color .2s ease;
   }
   .agenda-add-entry:hover{border-color:var(--accent);color:var(--accent);}
+
+  .agenda-edit-entry{
+    border:none;background:none;color:var(--muted);cursor:pointer;font-size:0.85rem;
+    opacity:0;transition:opacity .15s ease;flex-shrink:0;padding:2px;
+  }
+  .agenda-day-row:hover .agenda-edit-entry{opacity:0.6;}
+  .agenda-edit-entry:hover{opacity:1 !important;color:var(--accent);}
   .agenda-remove-entry{
     background:none;border:none;color:var(--muted);cursor:pointer;
     font-size:1rem;line-height:1;padding:2px 4px;flex-shrink:0;
@@ -243,6 +265,7 @@
           </select>
           <select class="agenda-select" id="agenda-month"></select>
         </div>
+        <div class="agenda-align-spacer" id="agenda-align-spacer"></div>
         <ul class="agenda-days" id="agenda-days"></ul>
       </div>
     </div>
@@ -255,7 +278,7 @@
   // Cole aqui a URL do seu Web App depois de publicá-lo (termina em /exec).
   // Veja o passo a passo enviado junto com este arquivo.
   // ======================================================================
-  var GAS_URL = 'https://script.google.com/macros/s/AKfycbw7IYjvLVs4oTZUmhrXgGDeD1NHNvWF_jUw1eBGpNDFPtpDF4-PK9eNkivsSc9O3_ULkQ/exec';
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbxmjQvLs_bSCYbiW7MdTWf4uEok8nKMVGQpDamLzeIyLbLh8I4wdTepsCnlNSUk9YM/exec';
 
   var storage = {
     get: async function(key){
@@ -287,6 +310,7 @@
   var STORAGE_KEY = 'doit-data';
   var state = null;
   var editingId = null; // project currently in rename mode
+  var editingTaskId = null; // task currently in edit mode
   var isSwitching = false;
   var confirmDeleteId = null; // project pending permanent-delete confirmation
 
@@ -357,6 +381,7 @@
     renderCounter();
     renderPanelInstant();
     renderAgendaDays();
+    setTimeout(alignAgendaTop, 50);
   }
 
   async function saveState(){
@@ -493,6 +518,7 @@
     editingId = p.id;
     renderTabs();
     renderPanelInstant();
+    setTimeout(alignAgendaTop, 50);
     saveState();
   }
 
@@ -635,10 +661,40 @@
         var metaText = 'Criada em ' + formatDate(t.createdAt);
         if(t.done && t.doneAt) metaText += ' · Concluída em ' + formatDate(t.doneAt);
 
-        var body = el('div', { class: 'task-body' }, [
-          el('div', { class: 'task-text', text: t.text }),
-          el('div', { class: 'task-meta', text: metaText })
-        ]);
+        var bodyChildren;
+        if(editingTaskId === t.id){
+          var editInput = el('input', { class: 'task-edit-input', type: 'text' });
+          editInput.value = t.text;
+          function commitTaskEdit(){
+            var newText = editInput.value.trim();
+            if(newText) t.text = newText;
+            editingTaskId = null;
+            buildPanelContent();
+            saveState();
+          }
+          editInput.addEventListener('keydown', function(e){
+            if(e.key === 'Enter'){ e.preventDefault(); commitTaskEdit(); }
+            if(e.key === 'Escape'){ editingTaskId = null; buildPanelContent(); }
+          });
+          editInput.addEventListener('blur', commitTaskEdit);
+          bodyChildren = [editInput, el('div', { class: 'task-meta', text: metaText })];
+        } else {
+          bodyChildren = [
+            el('div', { class: 'task-text', text: t.text }),
+            el('div', { class: 'task-meta', text: metaText })
+          ];
+        }
+        var body = el('div', { class: 'task-body' }, bodyChildren);
+
+        var editBtn = el('button', {
+          class: 'task-edit', text: '✎', 'aria-label': 'Editar tarefa',
+          onclick: function(){
+            editingTaskId = t.id;
+            buildPanelContent();
+            var input = panelEl.querySelector('.task-edit-input');
+            if(input){ input.focus(); input.select(); }
+          }
+        });
 
         var removeBtn = el('button', {
           class: 'task-remove', text: '✕', 'aria-label': 'Remover tarefa',
@@ -650,7 +706,7 @@
           }
         });
 
-        var item = el('li', { class: 'task-item' + (t.done ? ' done' : '') }, [checkbox, body, removeBtn]);
+        var item = el('li', { class: 'task-item' + (t.done ? ' done' : '') }, [checkbox, body, editBtn, removeBtn]);
         list.appendChild(item);
       });
       panelEl.appendChild(list);
@@ -761,7 +817,7 @@
           text: label
         });
 
-        var input = el('input', { class: 'agenda-input', type: 'text', placeholder: 'Adicionar evento...' });
+        var input = el('input', { class: 'agenda-input', type: 'text' });
         input.value = entry.text;
         input.addEventListener('input', function(){ entry.text = input.value; });
         input.addEventListener('blur', function(){ saveState(); });
@@ -782,6 +838,18 @@
           });
           rowChildren.push(addBtn);
         }
+
+        var editEntryBtn = el('button', {
+          class: 'agenda-edit-entry',
+          type: 'button',
+          text: '✎',
+          'aria-label': 'Editar este evento',
+          onclick: function(){
+            input.focus();
+            input.select();
+          }
+        });
+        rowChildren.push(editEntryBtn);
 
         var removeBtn = el('button', {
           class: 'agenda-remove-entry',
@@ -810,8 +878,38 @@
   agendaYearSelect.addEventListener('change', function(){
     populateMonthOptions();
     renderAgendaDays();
+    alignAgendaTop();
   });
-  agendaMonthSelect.addEventListener('change', renderAgendaDays);
+  agendaMonthSelect.addEventListener('change', function(){
+    renderAgendaDays();
+    alignAgendaTop();
+  });
+
+  // ---------- Alinhamento da 1ª linha da agenda com a linha "Nova tarefa" ----------
+  function alignAgendaTop(){
+    var spacer = document.getElementById('agenda-align-spacer');
+    if(!spacer) return;
+    spacer.style.height = '0px';
+    var taskRef = panelEl.querySelector('.task-input-row');
+    var agendaRef = agendaDaysEl.querySelector('.agenda-day-row');
+    if(!taskRef || !agendaRef || !panelEl.classList.contains('open')) return;
+    requestAnimationFrame(function(){
+      var taskTop = taskRef.getBoundingClientRect().top;
+      var agendaTop = agendaRef.getBoundingClientRect().top;
+      var diff = taskTop - agendaTop;
+      if(diff > 0) spacer.style.height = diff + 'px';
+    });
+  }
+
+  panelEl.addEventListener('transitionend', function(e){
+    if(e.propertyName === 'max-height') alignAgendaTop();
+  });
+
+  var alignResizeTimer = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(alignResizeTimer);
+    alignResizeTimer = setTimeout(alignAgendaTop, 150);
+  });
 
   populateMonthOptions();
 
