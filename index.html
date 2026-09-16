@@ -143,13 +143,18 @@
   .task-text{font-size:0.98rem;line-height:1.4;word-break:break-word;}
   .task-item.done .task-text{color:var(--muted);text-decoration:line-through;}
   .task-meta{font-size:0.74rem;color:var(--muted);margin-top:3px;}
-  .task-remove, .task-edit{
+  .task-remove, .task-edit, .task-move{
     border:none;background:none;color:var(--muted);cursor:pointer;font-size:0.85rem;
     opacity:0;transition:opacity .15s ease;flex-shrink:0;padding:2px;
   }
-  .task-item:hover .task-remove, .task-item:hover .task-edit{opacity:0.6;}
+  .task-item:hover .task-remove, .task-item:hover .task-edit, .task-item:hover .task-move{opacity:0.6;}
   .task-remove:hover{opacity:1 !important;color:var(--danger);}
   .task-edit:hover{opacity:1 !important;color:var(--accent);}
+  .task-move{font-size:0.7rem;}
+  .task-move:hover:not([disabled]){opacity:1 !important;color:var(--accent);}
+  .task-move[disabled]{opacity:0.15 !important;cursor:default;}
+  .task-item:hover .task-move[disabled]{opacity:0.15 !important;}
+  .task-move-group{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
   .task-edit-input{
     width:100%;border:none;border-bottom:1px solid var(--accent);padding:2px 0;
     font:inherit;font-size:0.98rem;background:transparent;color:var(--text);outline:none;
@@ -203,6 +208,8 @@
     font-variant-numeric:tabular-nums;min-width:96px;
   }
   .agenda-date.is-continuation{color:transparent;user-select:none;}
+  .agenda-day.is-today{background:var(--accent-soft);border-radius:6px;padding-left:6px;padding-right:6px;margin-left:-6px;margin-right:-6px;}
+  .agenda-day.is-today .agenda-date{color:var(--accent);font-weight:600;}
   .agenda-input{
     flex:1;border:none;padding:6px 2px;
     font:inherit;font-size:0.95rem;background:transparent;color:var(--text);outline:none;
@@ -651,7 +658,7 @@
       panelEl.appendChild(el('p', { class: 'empty-state', text: 'Nenhuma tarefa ainda. Adicione a primeira acima.' }));
     } else {
       var list = el('ul', { class: 'task-list' });
-      project.tasks.forEach(function(t){
+      project.tasks.forEach(function(t, idx){
         var checkbox = el('input', { class: 'task-checkbox', type: 'checkbox' });
         checkbox.checked = t.done;
         checkbox.addEventListener('change', function(){
@@ -710,13 +717,39 @@
           }
         });
 
-        var item = el('li', { class: 'task-item' + (t.done ? ' done' : '') }, [checkbox, body, editBtn, removeBtn]);
+        var moveUpBtn = el('button', {
+          class: 'task-move', text: '▲', 'aria-label': 'Mover tarefa para cima',
+          onclick: function(){ moveTask(project, t.id, -1); }
+        });
+        if(idx === 0) moveUpBtn.disabled = true;
+
+        var moveDownBtn = el('button', {
+          class: 'task-move', text: '▼', 'aria-label': 'Mover tarefa para baixo',
+          onclick: function(){ moveTask(project, t.id, 1); }
+        });
+        if(idx === project.tasks.length - 1) moveDownBtn.disabled = true;
+
+        var moveGroup = el('div', { class: 'task-move-group' }, [moveUpBtn, moveDownBtn]);
+
+        var item = el('li', { class: 'task-item' + (t.done ? ' done' : '') }, [checkbox, body, moveGroup, editBtn, removeBtn]);
         list.appendChild(item);
       });
       panelEl.appendChild(list);
     }
 
     renderCounter();
+  }
+
+  function moveTask(project, taskId, direction){
+    var idx = project.tasks.findIndex(function(x){ return x.id === taskId; });
+    if(idx === -1) return;
+    var newIdx = idx + direction;
+    if(newIdx < 0 || newIdx >= project.tasks.length) return;
+    var tmp = project.tasks[idx];
+    project.tasks[idx] = project.tasks[newIdx];
+    project.tasks[newIdx] = tmp;
+    buildPanelContent();
+    saveState();
   }
 
   function buildArchiveContent(){
@@ -807,12 +840,28 @@
     var month = parseInt(agendaMonthSelect.value, 10);
     var daysInMonth = new Date(year, month, 0).getDate();
 
-    for(let d = 1; d <= daysInMonth; d++){
+    // Mecanismo: quando o mês/ano exibido é o mês/ano atual, a linha do dia
+    // de hoje é sempre colocada na primeira posição da lista. Os demais dias
+    // seguem em ordem a partir de hoje até o fim do mês e, depois, do dia 1
+    // até a véspera de hoje (ordem "rotacionada").
+    var now = new Date();
+    var isCurrentMonth = (year === now.getFullYear()) && (month === now.getMonth() + 1);
+    var todayDate = now.getDate();
+
+    var dayNumbers = [];
+    for(var n = 1; n <= daysInMonth; n++) dayNumbers.push(n);
+    if(isCurrentMonth){
+      var todayIdx = todayDate - 1;
+      dayNumbers = dayNumbers.slice(todayIdx).concat(dayNumbers.slice(0, todayIdx));
+    }
+
+    dayNumbers.forEach(function(d){
       let dateObj = new Date(year, month - 1, d);
       let dateKey = year + '-' + pad2(month) + '-' + pad2(d);
       let label = pad2(d) + '/' + pad2(month) + ' - ' + WEEKDAYS_PT[dateObj.getDay()] + ':';
+      let isToday = isCurrentMonth && d === todayDate;
 
-      let dayLi = el('li', { class: 'agenda-day' });
+      let dayLi = el('li', { class: 'agenda-day' + (isToday ? ' is-today' : '') });
       let entries = getDayEntries(dateKey);
 
       entries.forEach(function(entry, idx){
@@ -876,7 +925,7 @@
       });
 
       agendaDaysEl.appendChild(dayLi);
-    }
+    });
 
     adjustAgendaScrollPadding();
   }
